@@ -30,8 +30,8 @@ export async function GET(
       },
       {
         headers: {
-          // Cache for 24 hours (86400 seconds) - reduces function invocations
-          'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=172800',
+          // Cache for 30 days (2592000 seconds) - reduces function invocations
+          'Cache-Control': 'public, s-maxage=2592000, stale-while-revalidate=5184000',
         },
       }
     );

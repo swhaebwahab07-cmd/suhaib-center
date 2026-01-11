@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getAllLinktrees, createLinktree } from "@/lib/supabase/queries";
 import { getSession } from "@/lib/auth/get-session";
 import { normalizeTemplateConfig } from "@/lib/templates/config";
@@ -21,8 +22,8 @@ export async function GET() {
       { data: linktrees },
       {
         headers: {
-          // Cache for 24 hours (86400 seconds) - reduces function invocations
-          'Cache-Control': 'private, s-maxage=86400, stale-while-revalidate=172800',
+          // Cache for 30 days (2592000 seconds) - reduces function invocations
+          'Cache-Control': 'private, s-maxage=2592000, stale-while-revalidate=5184000',
         },
       }
     );
@@ -120,16 +121,12 @@ export async function POST(request: NextRequest) {
 
       // Revalidate pages after creation
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/revalidate?path=/&type=page`, {
-          method: 'POST',
-        });
+        revalidatePath("/", "page");
         if (linktree.uid) {
-          await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/revalidate?path=/${linktree.uid}&type=page`, {
-            method: 'POST',
-          });
+          revalidatePath(`/${linktree.uid}`, "page");
         }
       } catch (revalidateError) {
-        console.error("Revalidation error (non-critical):", revalidateError);
+        // Silently fail - revalidation is non-critical
       }
 
       return NextResponse.json({ data: linktree }, { 

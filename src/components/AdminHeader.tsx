@@ -90,6 +90,19 @@ export function AdminHeader({ onCreateNew, onRefresh, onProfileClick }: AdminHea
 
           {/* Right Section - Actions & Profile */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {/* Refresh Button */}
+            {onRefresh && (
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="p-2 sm:p-2.5 rounded-lg hover:bg-gray-100 transition-all text-gray-700 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 hover:border-gray-400"
+                aria-label="نوێکردنەوە"
+                title="نوێکردنەوە"
+              >
+                <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+
             {/* Create New Button */}
             {onCreateNew && (
               <button
@@ -107,19 +120,6 @@ export function AdminHeader({ onCreateNew, onRefresh, onProfileClick }: AdminHea
               >
                 <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="hidden md:inline">بەستەری نوێ</span>
-              </button>
-            )}
-
-            {/* Refresh Button */}
-            {onRefresh && (
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="p-2 sm:p-2.5 rounded-lg hover:bg-gray-100 transition-all text-gray-700 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 hover:border-gray-400"
-                aria-label="نوێکردنەوە"
-                title="نوێکردنەوە"
-              >
-                <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 transition-transform ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
             )}
 

@@ -3,9 +3,12 @@ import { getSession } from "@/lib/auth/get-session";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
 // Force dynamic rendering - always check authentication
+// Note: This is necessary for auth check, but we minimize edge function calls
+// by using client-side caching and only checking auth on server
 export const dynamic = 'force-dynamic';
 
 // Prevent caching of this page - always check authentication
+// However, client-side caching handles data fetching to minimize API calls
 export const revalidate = 0;
 
 export default async function AdminPage() {

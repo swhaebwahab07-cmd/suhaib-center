@@ -30,7 +30,7 @@ export async function GET() {
         },
       }, {
         headers: {
-          'Cache-Control': 'private, s-maxage=86400, stale-while-revalidate=172800',
+          'Cache-Control': 'private, s-maxage=2592000, stale-while-revalidate=5184000',
         },
       });
     }
@@ -47,7 +47,7 @@ export async function GET() {
       },
     }, {
       headers: {
-        'Cache-Control': 'private, s-maxage=86400, stale-while-revalidate=172800',
+        'Cache-Control': 'private, s-maxage=2592000, stale-while-revalidate=5184000',
       },
     });
   } catch (error) {

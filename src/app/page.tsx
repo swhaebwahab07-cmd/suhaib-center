@@ -13,8 +13,8 @@ const LinktreePage = dynamicImport(() => import("@/components/public/LinktreePag
   ssr: true,
 });
 
-// ISR: Revalidate every 24 hours (86400 seconds) - reduces function invocations
-export const revalidate = 86400;
+// ISR: Revalidate every 30 days (2592000 seconds) - reduces function invocations
+export const revalidate = 2592000;
 export const dynamic = 'force-static';
 
 export default async function Home() {

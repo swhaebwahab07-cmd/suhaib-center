@@ -40,13 +40,13 @@ export async function GET(
       );
     }
 
-    // Check cache first (24 hour cache for analytics to reduce database load)
+    // Check cache first (30 day cache for analytics to reduce database load)
     const cacheKey = getAnalyticsCacheKey(id);
     const cached = getCache(cacheKey);
     if (cached) {
       return NextResponse.json({ data: cached }, {
         headers: {
-          'Cache-Control': 'private, s-maxage=86400, stale-while-revalidate=172800',
+          'Cache-Control': 'private, s-maxage=2592000, stale-while-revalidate=5184000',
           'X-Cache': 'HIT',
           'X-RateLimit-Limit': '30',
           'X-RateLimit-Remaining': String(rateLimit.remaining),
@@ -79,12 +79,12 @@ export async function GET(
     
     const analytics = await Promise.race([analyticsPromise, timeoutPromise]) as Awaited<ReturnType<typeof getLinktreeAnalytics>>;
 
-    // Cache the result for 24 hours (86400000 ms)
-    setCache(cacheKey, analytics, 86400000);
+    // Cache the result for 30 days (2592000000 ms)
+    setCache(cacheKey, analytics, 2592000000);
 
     return NextResponse.json({ data: analytics }, {
       headers: {
-        'Cache-Control': 'private, s-maxage=86400, stale-while-revalidate=172800',
+        'Cache-Control': 'private, s-maxage=2592000, stale-while-revalidate=5184000',
         'X-Cache': 'MISS',
         'X-RateLimit-Limit': '30',
         'X-RateLimit-Remaining': String(rateLimit.remaining),

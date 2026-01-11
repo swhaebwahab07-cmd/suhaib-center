@@ -103,8 +103,8 @@ export const AdminDashboard = memo(function AdminDashboard({
             const parsed = JSON.parse(cachedData);
             const cacheTime = parsed.timestamp || 0;
             const now = Date.now();
-            // Use cached data if less than 24 hours old (86400000 ms)
-            if (now - cacheTime < 86400000) {
+            // Use cached data if less than 30 days old (2592000000 ms)
+            if (now - cacheTime < 2592000000) {
               setLinktreesData(parsed.data);
               setIsLoading(false);
               return;
@@ -181,9 +181,31 @@ export const AdminDashboard = memo(function AdminDashboard({
   }, [currentUsername]);
 
   useEffect(() => {
-    // Only fetch if no initial data provided
+    // Only fetch if no initial data AND no cache exists
+    // This prevents unnecessary API calls on every page load
     if (initialLinktrees.length === 0) {
-      fetchLinktrees(false); // Use cache if available
+      // Check cache first before making any API call
+      const cacheKey = 'linktrees_list';
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        try {
+          const parsed = JSON.parse(cachedData);
+          const cacheTime = parsed.timestamp || 0;
+          const now = Date.now();
+          // Use cached data if less than 30 days old (2592000000 ms)
+          if (now - cacheTime < 2592000000) {
+            setLinktreesData(parsed.data);
+            setIsLoading(false);
+            return; // Don't fetch, use cache
+          }
+        } catch {
+          // Invalid cache, fetch fresh data
+          fetchLinktrees(false);
+        }
+      } else {
+        // No cache, fetch fresh data
+        fetchLinktrees(false);
+      }
     }
     
     // Preload modal component in background for faster subsequent opens
@@ -207,8 +229,8 @@ export const AdminDashboard = memo(function AdminDashboard({
         const parsed = JSON.parse(cachedData);
         const cacheTime = parsed.timestamp || 0;
         const now = Date.now();
-        // Use cached data if less than 24 hours old (86400000 ms)
-        if (now - cacheTime < 86400000) {
+        // Use cached data if less than 30 days old (2592000000 ms)
+        if (now - cacheTime < 2592000000) {
           setEditData(parsed.data);
           setIsLoadingEditData(false);
           return;

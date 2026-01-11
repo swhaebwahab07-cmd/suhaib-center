@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   batchCreateLinks,
   getLinktreeById,
@@ -167,17 +168,12 @@ export async function POST(
 
     // Revalidate pages after link update
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      await fetch(`${baseUrl}/api/revalidate?path=/&type=page`, {
-        method: 'POST',
-      });
+      revalidatePath("/", "page");
       if (linktree.uid) {
-        await fetch(`${baseUrl}/api/revalidate?path=/${linktree.uid}&type=page`, {
-          method: 'POST',
-        });
+        revalidatePath(`/${linktree.uid}`, "page");
       }
     } catch (revalidateError) {
-      console.error("Revalidation error (non-critical):", revalidateError);
+      // Silently fail - revalidation is non-critical
     }
 
     return NextResponse.json({

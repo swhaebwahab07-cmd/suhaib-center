@@ -7,6 +7,7 @@ import {
 import { getSession } from "@/lib/auth/get-session";
 import { updateLinktreeSchema, sanitizeString, sanitizeSlug } from "@/lib/validation/linktree";
 import { normalizeTemplateConfig } from "@/lib/templates/config";
+import { revalidatePath } from "next/cache";
 // Template system is now fully dynamic using template_config
 
 // GET /api/linktrees/[id] - Get linktree by ID (admin only)
@@ -46,8 +47,8 @@ export async function GET(
 
     return NextResponse.json({ data: linktree }, {
       headers: {
-        // Cache for 24 hours (86400 seconds) - reduces function invocations
-        'Cache-Control': 'private, s-maxage=86400, stale-while-revalidate=172800',
+        // Cache for 30 days (2592000 seconds) - reduces function invocations
+        'Cache-Control': 'private, s-maxage=2592000, stale-while-revalidate=5184000',
       },
     });
   } catch (error) {
@@ -173,17 +174,12 @@ export async function PATCH(
     
     // Revalidate pages after update
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      await fetch(`${baseUrl}/api/revalidate?path=/&type=page`, {
-        method: 'POST',
-      });
+      revalidatePath("/", "page");
       if (updatedLinktree.uid) {
-        await fetch(`${baseUrl}/api/revalidate?path=/${updatedLinktree.uid}&type=page`, {
-          method: 'POST',
-        });
+        revalidatePath(`/${updatedLinktree.uid}`, "page");
       }
     } catch (revalidateError) {
-      console.error("Revalidation error (non-critical):", revalidateError);
+      // Silently fail - revalidation is non-critical
     }
     
     return NextResponse.json({ 
@@ -227,17 +223,12 @@ export async function DELETE(
 
     // Revalidate pages after deletion
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      await fetch(`${baseUrl}/api/revalidate?path=/&type=page`, {
-        method: 'POST',
-      });
+      revalidatePath("/", "page");
       if (linktreeToDelete?.uid) {
-        await fetch(`${baseUrl}/api/revalidate?path=/${linktreeToDelete.uid}&type=page`, {
-          method: 'POST',
-        });
+        revalidatePath(`/${linktreeToDelete.uid}`, "page");
       }
     } catch (revalidateError) {
-      console.error("Revalidation error (non-critical):", revalidateError);
+      // Silently fail - revalidation is non-critical
     }
 
     return NextResponse.json({ message: "Linktree deleted successfully" }, {

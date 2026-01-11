@@ -1206,5 +1206,87 @@ SELECT cron.schedule(
     $$SELECT cleanup_analytics_data()$$  -- SQL to execute (resets ALL analytics data)
 );
 
+-- ============================================
+-- EXPIRED LINKTREES CLEANUP FUNCTION
+-- ============================================
+-- Function to delete expired linktrees and all related data
+-- Related data (links, page_views, link_clicks) are automatically deleted via CASCADE
+CREATE OR REPLACE FUNCTION cleanup_expired_linktrees()
+RETURNS TABLE (
+    deleted_linktrees BIGINT,
+    deleted_links BIGINT,
+    deleted_page_views BIGINT,
+    deleted_link_clicks BIGINT
+) AS $$
+DECLARE
+    v_deleted_linktrees BIGINT;
+    v_deleted_links BIGINT;
+    v_deleted_page_views BIGINT;
+    v_deleted_link_clicks BIGINT;
+    v_expired_linktree_ids UUID[];
+BEGIN
+    -- Get IDs of expired linktrees before deletion
+    SELECT ARRAY_AGG(id) INTO v_expired_linktree_ids
+    FROM linktrees
+    WHERE expire_date IS NOT NULL 
+      AND expire_date <= NOW();
+    
+    -- Count related data before deletion (for reporting)
+    IF v_expired_linktree_ids IS NOT NULL AND array_length(v_expired_linktree_ids, 1) > 0 THEN
+        SELECT COUNT(*) INTO v_deleted_links
+        FROM links
+        WHERE linktree_id = ANY(v_expired_linktree_ids);
+        
+        SELECT COUNT(*) INTO v_deleted_page_views
+        FROM page_views
+        WHERE linktree_id = ANY(v_expired_linktree_ids);
+        
+        SELECT COUNT(*) INTO v_deleted_link_clicks
+        FROM link_clicks
+        WHERE linktree_id = ANY(v_expired_linktree_ids);
+    ELSE
+        v_deleted_links := 0;
+        v_deleted_page_views := 0;
+        v_deleted_link_clicks := 0;
+    END IF;
+    
+    -- Delete expired linktrees (CASCADE will automatically delete related data)
+    DELETE FROM linktrees
+    WHERE expire_date IS NOT NULL 
+      AND expire_date <= NOW();
+    
+    GET DIAGNOSTICS v_deleted_linktrees = ROW_COUNT;
+    
+    RETURN QUERY SELECT v_deleted_linktrees, v_deleted_links, v_deleted_page_views, v_deleted_link_clicks;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission for cleanup function
+GRANT EXECUTE ON FUNCTION cleanup_expired_linktrees() TO service_role;
+
+-- ============================================
+-- PG_CRON SCHEDULED JOB - EXPIRED LINKTREES
+-- ============================================
+-- Schedule cleanup function to run daily at 3:30 AM UTC (30 minutes after analytics cleanup)
+-- Cron format: minute hour day month day-of-week
+-- 30 3 * * * = Every day at 3:30 AM UTC
+-- 
+-- This will automatically delete expired linktrees and all related data daily
+
+-- Remove existing job if it exists (to avoid duplicates)
+SELECT cron.unschedule('cleanup-expired-linktrees-daily')
+WHERE EXISTS (
+    SELECT 1 FROM cron.job WHERE jobname = 'cleanup-expired-linktrees-daily'
+);
+
+-- Schedule the cleanup job to run daily at 3:30 AM UTC
+-- This will automatically call cleanup_expired_linktrees() every day
+-- The function will delete all expired linktrees and related data (links, page_views, link_clicks)
+SELECT cron.schedule(
+    'cleanup-expired-linktrees-daily',    -- Job name
+    '30 3 * * *',                         -- Cron schedule: 3:30 AM UTC daily
+    $$SELECT cleanup_expired_linktrees()$$ -- SQL to execute (deletes expired linktrees)
+);
+
 
 

@@ -28,8 +28,8 @@ export async function GET(
       data: links 
     }, {
       headers: {
-        // Cache for 24 hours (86400 seconds) - reduces function invocations
-        'Cache-Control': 'private, s-maxage=86400, stale-while-revalidate=172800',
+        // Cache for 30 days (2592000 seconds) - reduces function invocations
+        'Cache-Control': 'private, s-maxage=2592000, stale-while-revalidate=5184000',
       }
     });
   } catch (error) {

@@ -70,7 +70,7 @@ export const AnalyticsModal = memo(function AnalyticsModal({
       fetchAnalytics();
       
       // Removed auto-refresh - user can manually refresh if needed
-      // This reduces unnecessary API calls (24-hour cache is sufficient)
+      // This reduces unnecessary API calls (30-day cache is sufficient)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, linktreeId]);
@@ -89,15 +89,15 @@ export const AnalyticsModal = memo(function AnalyticsModal({
           // Ignore storage errors
         }
       } else {
-        // Check browser cache first (24 hour cache)
+        // Check browser cache first (30-day cache)
         const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) {
           try {
             const parsed = JSON.parse(cachedData);
             const cacheTime = parsed.timestamp || 0;
             const now = Date.now();
-            // Use cached data if less than 24 hours old (86400000 ms)
-            if (now - cacheTime < 86400000) {
+            // Use cached data if less than 30 days old (2592000000 ms = 30 days)
+            if (now - cacheTime < 2592000000) {
               setAnalytics(parsed.data);
               setLastUpdated(new Date(parsed.timestamp));
               setIsLoading(false);
@@ -122,7 +122,7 @@ export const AnalyticsModal = memo(function AnalyticsModal({
       setAnalytics(result.data);
       setLastUpdated(new Date());
       
-      // Cache in localStorage for 24 hours
+      // Cache in localStorage for 30 days (2592000000 ms)
       try {
         localStorage.setItem(cacheKey, JSON.stringify({
           data: result.data,

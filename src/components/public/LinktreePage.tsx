@@ -123,31 +123,18 @@ export const LinktreePage = memo(function LinktreePage({ linktree, links }: Link
     };
   }, []);
 
-  // Track page view only once per session (optimized for free tier)
+  // Track page view only once per session (batched every 3 hours)
   useEffect(() => {
     const { trackPageView } = require("@/lib/utils/tracking");
+    const { queueView } = require("@/lib/utils/analytics-batch");
     
     // Only track if not already tracked in this session
     if (!trackPageView(linktree.uid)) {
-      return; // Already tracked, skip API call
+      return; // Already tracked, skip
     }
     
-    // Simple tracking - minimal data
-    const trackingData = JSON.stringify({ referrer: document.referrer || null });
-    
-    // Use sendBeacon for reliability (non-blocking)
-    if (navigator.sendBeacon) {
-        const blob = new Blob([trackingData], { type: "application/json" });
-      navigator.sendBeacon(`/api/public/linktrees/${linktree.uid}/view`, blob);
-    } else if (typeof fetch !== "undefined") {
-      // Fallback to fetch
-      fetch(`/api/public/linktrees/${linktree.uid}/view`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: trackingData,
-        keepalive: true,
-      }).catch(() => {}); // Silently fail
-    }
+    // Queue view for batched sending (reduces function invocations)
+    queueView(linktree.uid);
   }, [linktree.uid]);
   // Simplified theme calculation
   const theme: TemplateTheme = useMemo(() => {
@@ -180,26 +167,14 @@ export const LinktreePage = memo(function LinktreePage({ linktree, links }: Link
   }, [linktree.background_color]);
 
   const handleLinkClick = useCallback((linkId: string, url: string, platform: string, defaultMessage?: string | null) => {
-    // Track click only once per session (optimized for free tier)
+    // Track click using unified batched system (reduces API calls)
     const { trackLinkClick } = require("@/lib/utils/tracking");
+    const { queueClick } = require("@/lib/utils/analytics-batch");
     
     // Only track if not already tracked in this session
     if (trackLinkClick(linkId)) {
-      // Simple tracking - minimal data
-      const trackingData = JSON.stringify({ referrer: document.referrer || null });
-    
-      // Use sendBeacon (non-blocking)
-      if (navigator.sendBeacon) {
-        const blob = new Blob([trackingData], { type: "application/json" });
-        navigator.sendBeacon(`/api/public/links/${linkId}/click`, blob);
-      } else if (typeof fetch !== "undefined") {
-          fetch(`/api/public/links/${linkId}/click`, {
-            method: "POST",
-          headers: { "Content-Type": "application/json" },
-            body: trackingData,
-          keepalive: true,
-        }).catch(() => {}); // Silently fail
-      }
+      // Queue click for batched sending (reduces function invocations)
+      queueClick(linkId);
     }
 
     // Append default message to URL if platform supports it
